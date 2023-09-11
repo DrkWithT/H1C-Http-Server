@@ -20,4 +20,4 @@ This repo contains files and code for a minimal, toy HTTP/1.x server. The softwa
  1. ~~Implement response writer.~~
  2. ~~Implement and fill in main server "object".~~
  3. ~~Refactor server to send `Date: xxx` header.~~
- 4. Refactor server to use threads later.
+ 4. Refactor server to use route handler logic.

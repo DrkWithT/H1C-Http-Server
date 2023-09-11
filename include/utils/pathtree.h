@@ -2,6 +2,7 @@
 #define PATHTREE_H
 
 #include "utils/handler.h"
+#include "utils/misc.h"
 
 /* Structs */
 
@@ -11,10 +12,8 @@
  */
 typedef struct pathtree_node_t
 {
-    const char *path_token;  // URL path hash
-
+    size_t term_hash;        // URL path part hash
     H1CHandler handler;      // handler state
-
     struct pathtree_node_t *left;
     struct pathtree_node_t *right;
 } PTreeNode;
@@ -27,12 +26,14 @@ typedef struct pathtree_t
 
 /* PTreeNode Funcs */
 
-PTreeNode *ptnode_create(const char *path_part);
-void ptnode_preorder_walk(const URLPath *path, int path_pos, const PTree *ptnode);
+PTreeNode *ptnode_create(const char *path_part, bool is_fallback, HttpMethod method, MimeType mime, HandlerFunc callback, FallbackFunc fallback);
+void ptnode_destroy_all(PTreeNode *sub_root);
 
 /** PTree Funcs */
 
 void ptree_init(PTree *ptree);
-void ptree_traverse(const URLPath *path, const PTreeNode *ptnode);
+void ptree_dispose(PTree *ptree);
+const PTreeNode *ptree_get(const PTree *ptree, const URLPath *path);
+bool ptree_put(PTree *ptree, const URLPath *path, PTreeNode *node);
 
 #endif

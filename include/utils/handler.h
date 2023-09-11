@@ -40,16 +40,16 @@ typedef struct h1chandler_t
 
 /** H1CHandler Funcs */
 
-void h1chandler_init(H1CHandler *handler, HttpMethod method, HandlerFunc callback);
+void h1chandler_init(H1CHandler *handler, bool is_fallback, HttpMethod method, MimeType mime, HandlerFunc callback, FallbackFunc fallback);
 
 /**
- * @brief Verifies if a request can be served by its qualities. The basic algorithm does these checks in order: method, MIME type, and then request 
+ * @brief Verifies if a request can be served by its qualities. The basic algorithm does these checks in order: method then MIME type.
  * 
  * @param handler
  * @param req
- * @returns true if valid
+ * @returns HandlerStatus OK if valid
  */
-bool h1chandler_check_req(const H1CHandler *handler, BaseRequest *req);
+HandlerStatus h1chandler_check_req(const H1CHandler *handler, BaseRequest *req);
 
 /**
  * @brief Runs either the normal or error handler logic based on the request data. If the request is invalid by the checks in h1chandler_check_req, then the error handling logic runs. Otherwise, the normal logic runs.  

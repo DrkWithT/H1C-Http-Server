@@ -1,7 +1,6 @@
 #ifndef HANDLER_H
 #define HANDLER_H
 
-#include "utils/myurl.h"
 #include "h1c/reqinfo.h"
 #include "h1c/resinfo.h"
 

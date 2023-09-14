@@ -1,6 +1,7 @@
 # ignore other dirs, files
 bin/
 build/
+.vscode/
 
 # ignore future server config file
 config.txt

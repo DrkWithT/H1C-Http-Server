@@ -3,6 +3,7 @@
 
 #include "h1c/reqinfo.h"
 #include "h1c/resinfo.h"
+#include "utils/handlerctx.h"
 
 /** Typedefs & Structs */
 
@@ -18,12 +19,12 @@ typedef enum handler_status_e
 /**
  * @brief An alias for normal handler logic.
  */
-typedef HandlerStatus (*HandlerFunc)(const BaseRequest *req, ResponseObj *res);
+typedef HandlerStatus (*HandlerFunc)(const HandlerContext *ctx, const BaseRequest *req, ResponseObj *res);
 
 /**
  * @brief An alias for error handler logic
  */
-typedef HandlerStatus (*FallbackFunc)(const BaseRequest *req, ResponseObj *res, HandlerStatus prev_status);
+typedef HandlerStatus (*FallbackFunc)(const HandlerContext *ctx, const BaseRequest *req, ResponseObj *res, HandlerStatus prev_status);
 
 /**
  * @brief Contains simple request handler data.
@@ -39,6 +40,16 @@ typedef struct h1chandler_t
 
 /** H1CHandler Funcs */
 
+/**
+ * @brief Sets up this H1CHandler object with tags, logic, and more.
+ * 
+ * @param handler
+ * @param is_fallback
+ * @param method
+ * @param mime 
+ * @param callback Normal handling function ptr. 
+ * @param fallback Error handling function ptr.
+ */
 void h1chandler_init(H1CHandler *handler, bool is_fallback, HttpMethod method, MimeType mime, HandlerFunc callback, FallbackFunc fallback);
 
 /**
@@ -53,10 +64,11 @@ HandlerStatus h1chandler_check_req(const H1CHandler *handler, BaseRequest *req);
 /**
  * @brief Runs either the normal or error handler logic based on the request data. If the request is invalid by the checks in h1chandler_check_req, then the error handling logic runs. Otherwise, the normal logic runs.  
  * 
+ * @param ctx The context object to help serve content.
  * @param handler
  * @param req
  * @param res
  */
-void h1chandler_handle(const H1CHandler *handler, const BaseRequest *req, ResponseObj *res);
+void h1chandler_handle(const HandlerContext *ctx, const H1CHandler *handler, const BaseRequest *req, ResponseObj *res);
 
 #endif

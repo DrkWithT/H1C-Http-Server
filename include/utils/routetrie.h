@@ -2,7 +2,6 @@
 #define ROUTETRIE_H
 
 #include "utils/handler.h"
-#include "utils/misc.h"
 
 /* Magic Macros */
 

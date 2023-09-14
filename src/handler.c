@@ -34,25 +34,25 @@ HandlerStatus h1chandler_check_req(const H1CHandler *handler, BaseRequest *req)
     return HANDLE_OK; // NOTE: I won't check for invalid request header values for now.
 }
 
-void h1chandler_handle(const H1CHandler *handler, const BaseRequest *req, ResponseObj *res)
+void h1chandler_handle(const HandlerContext *ctx, const H1CHandler *handler, const BaseRequest *req, ResponseObj *res)
 {
     HandlerStatus check_code = h1chandler_check_req(handler, req);
 
     if (handler->is_fallback)
     {
-        return handler->fallback(req, res, check_code);
+        return handler->fallback(ctx, req, res, check_code);
     }
 
     if (check_code == HANDLE_OK)
     {
-        check_code = handler->callback(req, res);
+        check_code = handler->callback(ctx, req, res);
     }
     
     // Normal code can also fail too, so let's handle that for correctness.
     if (check_code != HANDLE_OK)
     {
-        check_code = handler->fallback(req, res, check_code);
+        check_code = handler->fallback(ctx, req, res, check_code);
     }
 
-    return check_code; // NOTE: get out the final status from all handler logic.
+    return check_code;
 }

@@ -35,7 +35,7 @@ typedef struct static_resource_t
 
 /* StaticResource Funcs. */
 
-void statsrc_init(StaticResource *statsrc, const char *fname);
+bool statsrc_init(StaticResource *statsrc, const char *fname);
 void statsrc_dispose(StaticResource *statsrc);
 MimeType statsrc_get_type(const StaticResource *statsrc);
 int statsrc_get_length(const StaticResource *statsrc);

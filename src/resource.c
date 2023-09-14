@@ -82,16 +82,27 @@ char *file_read_all(const char *fname, size_t *read_count_ref)
 
 /* StaticResource Funcs. */
 
-void statsrc_init(StaticResource *statsrc, const char *fname)
+bool statsrc_init(StaticResource *statsrc, const char *fname)
 {
     statsrc->fname = fname;
     statsrc->type = filename_get_mime(fname);
 
     size_t temp_clen = 0;
     char *raw_data = file_read_all(fname, &temp_clen);
+    bool alloc_ok = raw_data != NULL;
 
-    statsrc->data = raw_data;
-    statsrc->clen = temp_clen;
+    if (alloc_ok)
+    {
+        statsrc->data = raw_data;
+        statsrc->clen = temp_clen;
+    }
+    else
+    {
+        statsrc->data = NULL;
+        statsrc->clen = 0;
+    }
+
+    return alloc_ok;
 }
 
 void statsrc_dispose(StaticResource *statsrc)

@@ -62,6 +62,6 @@ void basic_reqinfo_clear(BaseRequest *base_req)
     }
 
     base_req->keep_connection = false;
-    base_req->mime_type = TXT_PLAIN;
+    base_req->mime_type = ANY_ANY;
     base_req->content_len = 0;
 }

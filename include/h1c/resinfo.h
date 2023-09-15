@@ -11,6 +11,15 @@
 
 #define STATUS_LINE_BUFSIZE 64
 
+/* Enums */
+
+typedef enum resinfo_reset_mode_e
+{
+    RES_RST_PAYLOAD,  // reset body blob
+    RES_RST_HEADERS,  // reset headers
+    RES_RST_ALL,      // reset every field
+} ResponseRstMode;
+
 /** Struct */
 
 /**
@@ -29,7 +38,7 @@ typedef struct resinfo_t
 } ResponseObj;
 
 void resinfo_init(ResponseObj *response, const char *server_name);
-void resinfo_reset(ResponseObj *response);
+void resinfo_reset(ResponseObj *response, ResponseRstMode mode);
 
 void resinfo_fill_status_line(ResponseObj *response, const char *schema, const char *code, const char *msg);
 void resinfo_set_keep_connection(ResponseObj *response, bool is_persistent);

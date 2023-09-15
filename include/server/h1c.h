@@ -3,6 +3,7 @@
 
 #include "h1c/h1scanner.h"
 #include "h1c/h1writer.h"
+#include "utils/routetrie.h"
 
 /** Magic Macros */
 
@@ -47,9 +48,14 @@ typedef struct h1c_server_t
 
     BaseRequest req;           // reusable HTTP request storage 
     ResponseObj res;           // reusable HTTP response storage
+
+    HandlerContext ctx;        // storage for extra handler resources 
+    Routrie router;            // URL to handler mapping
 } H1CServer;
 
 void server_init(H1CServer *server, const char *host_str, const char *port_str, int backlog);
+bool server_setup_ctx(H1CServer *server, const char *fnames[], uint16_t fcount);
+bool server_add_handler(H1CServer *server, const char *path, HttpMethod method, MimeType mime, HandlerFunc callback);
 void server_run(H1CServer *server);
 void server_end(H1CServer *server);
 

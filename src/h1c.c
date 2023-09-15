@@ -3,6 +3,7 @@
  * @author Derek Tan
  * @brief Implements the HTTP/1.x server.
  * @note The server will accomodate the client's connection wishes. If the client sends close, the server will close the connection after sending its response. Same logic goes for the keep-alive case.
+ * @todo Rewrite request handling helpers to use the Routrie object.
  * @date 2023-09-05
  * 
  * @copyright Copyright (c) 2023
@@ -22,6 +23,23 @@ void server_init(H1CServer *server, const char *host_str, const char *port_str, 
     server->req.mime_type = TXT_PLAIN;
     server->req.content_len = 0;
     resinfo_init(&server->res, H1C_APP_NAME);
+}
+
+bool server_setup_ctx(H1CServer *server, const char *fnames[], uint16_t fcount)
+{
+    handlerctx_init(&server->ctx, fcount, fnames);
+
+    return &server->ctx.ready;
+}
+
+bool server_add_handler(H1CServer *server, const char *path, HttpMethod method, MimeType mime, HandlerFunc callback)
+{
+    RoutrieNode *handler_item = routrie_node_create('\0', method, mime, callback);
+
+    if (handler_item != NULL)
+        return routrie_(&server->router, path, handler_item); // FIX!
+
+    return false;
 }
 
 void server_run(H1CServer *server)
@@ -85,12 +103,17 @@ void server_end(H1CServer *server)
 {
     server->state = H1C_STOP;
 
-    h1scanner_dispose(&server->msg_reader);
-    h1writer_dispose(&server->msg_writer);
     clientsocket_close(&server->client_sock);
     serversocket_close(&server->server_sock);
+
+    h1scanner_dispose(&server->msg_reader);
+    h1writer_dispose(&server->msg_writer);
+    
     basic_reqinfo_clear(&server->req);
-    resinfo_reset(&server->res);
+    resinfo_reset(&server->res, RES_RST_ALL);
+
+    routrie_annihilate(&server->router);
+    handlerctx_dispose(&server->ctx);
 }
 
 H1CState server_handle_valids(H1CServer *server, const BaseRequest *req)
@@ -102,53 +125,48 @@ H1CState server_handle_valids(H1CServer *server, const BaseRequest *req)
     bool temp_persist_flag = req->keep_connection; // Flag of whether to continue serving or not by Connection header
 
     ResponseObj *reply_ref = &server->res;
+    const Routrie *router_ref = &server->router;
+    const RoutrieNode *handler_item = routrie_get(router_ref, req->path_str);
 
-    // NOTE: replace this hardcoded route check with a trie, tree, or some D.S mapping routes to resources.
-    if (strcmp(temp_url, "/") != 0 && strcmp(temp_url, "/hello") != 0)
-    {
+    if (!handler_item)
         return server_handle_invalids(server, HTTP_STATUS_UNFOUND, HTTP_MSG_UNFOUND, req);
-    }
 
-    // 2b. Prepare main response content.
-    if (temp_method == HEAD)
+    switch (temp_schema)
     {
-        // 2. Prepare response status line.
-        if (temp_schema == HTTP_SCHEMA_1_0)
-            resinfo_fill_status_line(reply_ref, HTTP_1_0, HTTP_STATUS_OK, HTTP_MSG_OK);
-        else
-            resinfo_fill_status_line(reply_ref, HTTP_1_1, HTTP_STATUS_OK, HTTP_MSG_OK);
-
+    case HTTP_SCHEMA_1_0:
+        resinfo_fill_status_line(reply_ref, HTTP_1_0, HTTP_STATUS_OK, HTTP_MSG_OK);
         resinfo_set_keep_connection(reply_ref, temp_persist_flag);
-        resinfo_set_mime_type(reply_ref, TXT_PLAIN);
-        resinfo_set_content_length(reply_ref, H1C_DEMO_CLEN);
-        resinfo_set_body_payload(reply_ref, NULL);
-    }
-    else if (temp_method == GET)
-    {
-        // 2. Prepare response status line.
-        if (temp_schema == HTTP_SCHEMA_1_0)
-            resinfo_fill_status_line(reply_ref, HTTP_1_0, HTTP_STATUS_OK, HTTP_MSG_OK);
-        else
-            resinfo_fill_status_line(reply_ref, HTTP_1_1, HTTP_STATUS_OK, HTTP_MSG_OK);
-
+        break;
+    case HTTP_SCHEMA_1_1:
+        resinfo_fill_status_line(reply_ref, HTTP_1_1, HTTP_STATUS_OK, HTTP_MSG_OK);
         resinfo_set_keep_connection(reply_ref, temp_persist_flag);
-        resinfo_set_mime_type(reply_ref, TXT_PLAIN);
-        resinfo_set_content_length(reply_ref, H1C_DEMO_CLEN);
-        resinfo_set_body_payload(reply_ref, H1C_DEMO_CONTENT);
+        break;
+    default:
+        // NOTE: I reject unsupported HTTP versions for a simpler implementation... Thus, I should close the connection to minimize errors.
+        resinfo_fill_status_line(reply_ref, HTTP_1_1, HTTP_STATUS_SERVER_ERR, HTTP_MSG_SERVER_ERR);
+        resinfo_set_keep_connection(reply_ref, false);
+        break;
     }
-    else
-    {
-        // 2c. Handle unknown methods with 501!
-        // 2. Prepare response status line.
-        if (temp_schema == HTTP_SCHEMA_1_0)
-            resinfo_fill_status_line(reply_ref, HTTP_1_0, HTTP_STATUS_NO_IMPL, HTTP_STATUS_NO_IMPL);
-        else
-            resinfo_fill_status_line(reply_ref, HTTP_1_1, HTTP_STATUS_NO_IMPL, HTTP_STATUS_NO_IMPL);
 
-        resinfo_set_keep_connection(reply_ref, temp_persist_flag);
-        resinfo_set_mime_type(reply_ref, TXT_PLAIN);
-        resinfo_set_content_length(reply_ref, 0);
-    }
+    HandlerStatus main_handler_status = h1chandler_handle(&handler_item->normal_handler, &server->ctx, req, reply_ref);
+
+    // NOTE: Exits with an OK send from this helper if the response was well made... This is for correctness of response semantics.
+    if (main_handler_status == HANDLE_OK)
+        return H1C_SEND;
+
+    // NOTE: This extra code exits with an errorneous send.
+    resinfo_reset(reply_ref, RES_RST_ALL);
+
+    if (main_handler_status == HANDLE_BAD_PATH)
+        return server_handle_invalids(server, HTTP_STATUS_UNFOUND, HTTP_MSG_UNFOUND, req);
+
+    if (main_handler_status == HANDLE_BAD_METHOD)
+        return server_handle_invalids(server, HTTP_STATUS_UNFOUND, HTTP_MSG_UNFOUND, req);
+
+    if (main_handler_status == HANDLE_BAD_MIME)
+        return server_handle_invalids(server, HTTP_STATUS_UNFOUND, HTTP_MSG_UNFOUND, req);
+
+    return server_handle_invalids(server, HTTP_STATUS_UNFOUND, HTTP_MSG_UNFOUND, req);
 
     return H1C_SEND;
 }
@@ -157,7 +175,6 @@ H1CState server_handle_invalids(H1CServer *server, const char *status, const cha
 {
     // 1. Get request data.
     HttpSchema temp_schema = server->req.schema_id;
-
     ResponseObj *reply_ref = &server->res;
 
     // 2. Prepare response status line.
@@ -169,6 +186,7 @@ H1CState server_handle_invalids(H1CServer *server, const char *status, const cha
     resinfo_set_keep_connection(reply_ref, false);
     resinfo_set_mime_type(reply_ref, TXT_PLAIN);
     resinfo_set_content_length(reply_ref, 0);
+    resinfo_set_body_payload(reply_ref, NULL);
 
     return H1C_SEND;
 }
@@ -208,7 +226,7 @@ H1CState server_st_done(H1CServer *server)
     h1scanner_reset(&server->msg_reader);
     h1writer_reset(&server->msg_writer);
     basic_reqinfo_clear(&server->req);
-    resinfo_reset(&server->res);
+    resinfo_reset(&server->res, RES_RST_ALL);
 
     if (!copied_persist_flag)
         return H1C_STOP;

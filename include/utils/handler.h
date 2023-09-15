@@ -19,23 +19,22 @@ typedef enum handler_status_e
 /**
  * @brief An alias for normal handler logic.
  */
-typedef HandlerStatus (*HandlerFunc)(const HandlerContext *ctx, const BaseRequest *req, ResponseObj *res);
+typedef HandlerStatus (*HandlerFunc)(HandlerContext *ctx, BaseRequest *req, ResponseObj *res);
 
 /**
  * @brief An alias for error handler logic
  */
-typedef HandlerStatus (*FallbackFunc)(const HandlerContext *ctx, const BaseRequest *req, ResponseObj *res, HandlerStatus prev_status);
+typedef HandlerStatus (*FallbackFunc)(HandlerContext *ctx, BaseRequest *req, ResponseObj *res, HandlerStatus prev_status);
 
 /**
  * @brief Contains simple request handler data.
+ * @todo Use a union to better store function ptrs. for normal/error handling logic.
  */
 typedef struct h1chandler_t
 {
-    bool is_fallback;      // if handler is an error handler
     HttpMethod method;     // code of accepted method
     MimeType content_type; // allowed MIME type
     HandlerFunc callback;  // function with normal logic
-    FallbackFunc fallback; // function with error handling logic
 } H1CHandler;
 
 /** H1CHandler Funcs */
@@ -44,13 +43,11 @@ typedef struct h1chandler_t
  * @brief Sets up this H1CHandler object with tags, logic, and more.
  * 
  * @param handler
- * @param is_fallback
  * @param method
  * @param mime 
  * @param callback Normal handling function ptr. 
- * @param fallback Error handling function ptr.
  */
-void h1chandler_init(H1CHandler *handler, bool is_fallback, HttpMethod method, MimeType mime, HandlerFunc callback, FallbackFunc fallback);
+void h1chandler_init(H1CHandler *handler, HttpMethod method, MimeType mime, HandlerFunc callback);
 
 /**
  * @brief Verifies if a request can be served by its qualities. The basic algorithm does these checks in order: method then MIME type.
@@ -62,13 +59,14 @@ void h1chandler_init(H1CHandler *handler, bool is_fallback, HttpMethod method, M
 HandlerStatus h1chandler_check_req(const H1CHandler *handler, BaseRequest *req);
 
 /**
- * @brief Runs either the normal or error handler logic based on the request data. If the request is invalid by the checks in h1chandler_check_req, then the error handling logic runs. Otherwise, the normal logic runs.  
+ * @brief Runs either the normal handler logic based on the request data.
  * 
- * @param ctx The context object to help serve content.
  * @param handler
+ * @param ctx The context object to help serve content.
  * @param req
  * @param res
+ * @returns A HandlerStatus value. HANDLE_OK on no error.
  */
-void h1chandler_handle(const HandlerContext *ctx, const H1CHandler *handler, const BaseRequest *req, ResponseObj *res);
+HandlerStatus h1chandler_handle(const H1CHandler *handler, const HandlerContext *ctx, const BaseRequest *req, ResponseObj *res);
 
 #endif

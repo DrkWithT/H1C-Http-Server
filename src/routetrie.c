@@ -12,7 +12,7 @@
 
 /** RoutrieNode Funcs. */
 
-RoutrieNode *routrie_node_create(char term, bool is_fallback, HttpMethod method, MimeType mime, HandlerFunc callback, FallbackFunc fallback)
+RoutrieNode *routrie_node_create(char term, HttpMethod method, MimeType mime, HandlerFunc callback)
 {
     RoutrieNode *node = ALLOC_STRUCT(RoutrieNode);
     RoutrieNode **child_arr = NULL;
@@ -20,7 +20,7 @@ RoutrieNode *routrie_node_create(char term, bool is_fallback, HttpMethod method,
     if (node != NULL)
     {
         node->terminal = term;
-        h1chandler_init(&node->normal_handler, is_fallback, method, mime, callback, fallback);
+        h1chandler_init(&node->normal_handler, method, mime, callback);
 
         node->kin = NULL;
         node->count = 0;
@@ -133,6 +133,7 @@ bool routrie_add(Routrie *rtrie, const char *path, RoutrieNode *node_ref)
     RoutrieNode *parent = NULL;
     RoutrieNode *cursor = rtrie->root;
     int path_pos = 0;
+    char temp;
 
     if (!rtrie->root)
     {
@@ -143,7 +144,7 @@ bool routrie_add(Routrie *rtrie, const char *path, RoutrieNode *node_ref)
 
     while (cursor != NULL)
     {
-        char temp = path[path_pos];
+        temp = path[path_pos];
 
         // Ignore non path-item characters (usually alphabetical ones are okay). E.g: NUL terminates the path, and '/' does not mean a path segment.
         if (IS_AN_ALPHA(temp))
@@ -156,6 +157,8 @@ bool routrie_add(Routrie *rtrie, const char *path, RoutrieNode *node_ref)
 
         path_pos++;
     }
+
+    node_ref->terminal = temp;
 
     return routrie_node_add_kin(parent, node_ref);
 }

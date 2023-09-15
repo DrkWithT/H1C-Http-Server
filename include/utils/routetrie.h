@@ -21,13 +21,13 @@ typedef struct routrie_node_t
 
 typedef struct routetrie_t
 {
-    int count;          // The running total of successful appends for sanity checks!
-    RoutrieNode *root;  // A ptr. referencing the '/' root item... It must be initialized first!
+    int count;                   // The running total of successful appends for sanity checks!
+    RoutrieNode *root;           // A ptr. referencing the '/' root item... It must be initialized first!
 } Routrie;
 
 /* RoutrieNode Funcs. */
 
-RoutrieNode *routrie_node_create(char term, bool is_fallback, HttpMethod method, MimeType mime, HandlerFunc callback, FallbackFunc fallback);
+RoutrieNode *routrie_node_create(char term, HttpMethod method, MimeType mime, HandlerFunc callback);
 void routrie_node_annihilate(RoutrieNode *sub_root);
 RoutrieNode *routrie_node_get_kin(RoutrieNode *node, char term);
 bool routrie_node_add_kin(RoutrieNode *node, RoutrieNode *child);

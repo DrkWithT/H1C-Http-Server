@@ -16,6 +16,7 @@
 
 /** Methods */
 
+#define HTTP_METHOD_ANY "ANY"
 #define HTTP_METHOD_HEAD "HEAD"
 #define HTTP_METHOD_GET "GET"
 #define HTTP_METHOD_POST "POST"
@@ -59,10 +60,10 @@
 
 typedef enum http_method_e
 {
+    ANYTHING,
     HEAD,
     GET,
     POST,
-    ANYTHING,
     UNKNOWN
 } HttpMethod;
 

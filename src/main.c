@@ -11,10 +11,38 @@
 
 #include "server/h1c.h"
 
+/* Constants and Helper Macros */
+
+#define WWW_FILE_COUNT 2
+
+static const char *www_dir_files[WWW_FILE_COUNT] = {
+    "./www/index.html",
+    "./www/index.css"
+};
+
+/* Handler Funcs. */
+
+HandlerStatus handle_root(HandlerContext *ctx, BaseRequest *req, ResponseObj *res)
+{
+    const ResourceTable *restable_ref = &ctx->resources;
+    const StaticResource *resrc_ref = restable_get(restable_ref, "./www/index.html");
+
+    if (!resrc_ref)
+        return HANDLE_GENERAL_ERR;
+
+    resinfo_set_mime_type(res, TXT_HTML);
+    resinfo_set_content_length(res, statsrc_get_length(resrc_ref));
+    resinfo_set_body_payload(res, resrc_ref->data);
+
+    return HANDLE_OK;
+}
+
 int main(int argc, char *argv[])
 {
-    /// 1. Setup server state.
+    /// 1a. Setup server state.
     H1CServer server;
+    bool ctx_ok = true;      // if resources in context loaded 
+    bool handlers_ok = true; // if handlers loaded
 
     if (argc == 1)
     {
@@ -32,8 +60,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    /// 2. Run server.
-    /// 3. Automatically cleanup resources after service in server_run(...).
+    /// 1b. Load resources to server.
+    ctx_ok = server_setup_ctx(&server, www_dir_files, WWW_FILE_COUNT);
+
+    /// 1c. Load handlers to server.
+    handlers_ok = server_add_handler(&server, "/", GET, ANY_ANY, handle_root);
+
+    /// 2. Run server... Automatically cleans up resources after service in server_run(...).
     server_run(&server);
 
     return 0;

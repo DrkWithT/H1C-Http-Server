@@ -20,4 +20,5 @@ This repo contains files and code for a minimal, toy HTTP/1.x server. The softwa
     - ~~Implement static resources.~~
     - ~~Implement date utility and resource cache before packing them into a context object.~~
     - ~~Add context argument to callback & fallback function signatures.~~
-    - ~~Integrate routing & resources into server driver.~~
+    - Complete `RouteMap`: BST with strcmp values as keys.
+    - Integrate `RouteMap` into main server logic.

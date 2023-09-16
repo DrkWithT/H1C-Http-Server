@@ -26,7 +26,7 @@ bool handlerctx_init(HandlerContext *handlerctx, uint16_t fcount, const char *fn
         if (!temp_resrc_ref)
         {
             put_ok = false;
-            continue;
+            break;
         }
 
         if (!statsrc_init(temp_resrc_ref, fnames[i]))
@@ -34,7 +34,7 @@ bool handlerctx_init(HandlerContext *handlerctx, uint16_t fcount, const char *fn
             free(temp_resrc_ref);
             temp_resrc_ref = NULL;
             put_ok = false;
-            continue;
+            break;
         }
 
         put_ok = restable_put(&handlerctx->resources, fnames[i], temp_resrc_ref);

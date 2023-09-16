@@ -3,15 +3,13 @@
 
 #include "h1c/h1scanner.h"
 #include "h1c/h1writer.h"
-#include "utils/routetrie.h"
+#include "utils/routemap.h"
 
 /** Magic Macros */
 
-#define H1C_APP_NAME "H1C/0.0.1"
+#define H1C_APP_NAME "H1C/0.2.0"
 #define H1C_HOSTNAME "localhost"
 #define H1C_DEFAULT_PORT "8080"
-#define H1C_DEMO_CONTENT "Hello World!"
-#define H1C_DEMO_CLEN 12
 
 /** Enums */
 
@@ -49,8 +47,8 @@ typedef struct h1c_server_t
     BaseRequest req;           // reusable HTTP request storage 
     ResponseObj res;           // reusable HTTP response storage
 
-    HandlerContext ctx;        // storage for extra handler resources 
-    Routrie router;            // URL to handler mapping
+    HandlerContext ctx;        // storage for extra handler resources
+    RouteMap routes;           // request routing BST
 } H1CServer;
 
 void server_init(H1CServer *server, const char *host_str, const char *port_str, int backlog);

@@ -3,7 +3,6 @@
  * @author Derek Tan
  * @brief Implements the HTTP/1.x server.
  * @note The server will accomodate the client's connection wishes. If the client sends close, the server will close the connection after sending its response. Same logic goes for the keep-alive case.
- * @todo Rewrite request handling helpers to use the Routrie object.
  * @date 2023-09-05
  * 
  * @copyright Copyright (c) 2023
@@ -23,6 +22,8 @@ void server_init(H1CServer *server, const char *host_str, const char *port_str, 
     server->req.mime_type = TXT_PLAIN;
     server->req.content_len = 0;
     resinfo_init(&server->res, H1C_APP_NAME);
+    // (init handler ctx between server init and run)
+    rtemap_init(&server->routes);
 }
 
 bool server_setup_ctx(H1CServer *server, const char *fnames[], uint16_t fcount)
@@ -32,10 +33,10 @@ bool server_setup_ctx(H1CServer *server, const char *fnames[], uint16_t fcount)
 
 bool server_add_handler(H1CServer *server, const char *path, HttpMethod method, MimeType mime, HandlerFunc callback)
 {
-    RoutrieNode *handler_item = routrie_node_create('\0', method, mime, callback);
+    RoutedNode *handler_item = rtdnode_create(path, method, mime, callback);
 
     if (handler_item != NULL)
-        return routrie_add(&server->router, path, handler_item);
+        return rtemap_put(&server->routes, handler_item);
 
     return false;
 }
@@ -68,26 +69,21 @@ void server_run(H1CServer *server)
             server->state = H1C_RECV;
             break;
         case H1C_RECV:
-            puts("H1C_RECV");
             server->state = server_st_recv(server);
             break;
         case H1C_PROCESS:
-            puts("H1C_PROCESS");
             server->state = server_st_process(server);
             break;
         case H1C_SEND:
-            puts("H1C_SEND");
             server->state = server_st_send(server);
             break;
         case H1C_DONE:
-            puts("H1C_DONE");
             server->state = server_st_done(server);
             break;
         case H1C_STOP:
             break;
         case H1C_ERROR:
         default:
-            puts("H1C_ERROR");
             server->state = server_st_error(server);
             break;
         }
@@ -106,11 +102,11 @@ void server_end(H1CServer *server)
 
     h1scanner_dispose(&server->msg_reader);
     h1writer_dispose(&server->msg_writer);
-    
+
     basic_reqinfo_clear(&server->req);
     resinfo_reset(&server->res, RES_RST_ALL);
 
-    routrie_annihilate(&server->router);
+    rtemap_dispose(&server->routes);
     handlerctx_dispose(&server->ctx);
 }
 
@@ -123,8 +119,7 @@ H1CState server_handle_valids(H1CServer *server, const BaseRequest *req)
     bool temp_persist_flag = req->keep_connection; // Flag of whether to continue serving or not by Connection header
 
     ResponseObj *reply_ref = &server->res;
-    const Routrie *router_ref = &server->router;
-    const RoutrieNode *handler_item = routrie_get(router_ref, temp_url);
+    const RoutedNode *handler_item = rtemap_get(&server->routes, temp_url);
 
     if (!handler_item)
         return server_handle_invalids(server, HTTP_STATUS_UNFOUND, HTTP_MSG_UNFOUND, req);
@@ -146,11 +141,11 @@ H1CState server_handle_valids(H1CServer *server, const BaseRequest *req)
         break;
     }
 
-    const H1CHandler *handler_ref = &handler_item->normal_handler;
+    const H1CHandler *handler_ref = rtdnode_get_handler(handler_item);
 
     HandlerStatus main_handler_status = (handler_ref->method == temp_method)
         ? h1chandler_handle(handler_ref, &server->ctx, req, reply_ref)
-        : HANDLE_BAD_METHOD;
+        : HANDLE_BAD_METHOD; // BIG ERROR: unexpected 500 from here because of temp_method != GET...
 
     // NOTE: Exits with an OK send from this helper if the response was well made... This is for correctness of response semantics.
     if (main_handler_status == HANDLE_OK)
@@ -163,12 +158,12 @@ H1CState server_handle_valids(H1CServer *server, const BaseRequest *req)
         return server_handle_invalids(server, HTTP_STATUS_UNFOUND, HTTP_MSG_UNFOUND, req);
 
     if (main_handler_status == HANDLE_BAD_METHOD)
-        return server_handle_invalids(server, HTTP_STATUS_UNFOUND, HTTP_MSG_UNFOUND, req);
+        return server_handle_invalids(server, HTTP_STATUS_NO_IMPL, HTTP_MSG_NO_IMPL, req);
 
     if (main_handler_status == HANDLE_BAD_MIME)
-        return server_handle_invalids(server, HTTP_STATUS_UNFOUND, HTTP_MSG_UNFOUND, req);
+        return server_handle_invalids(server, HTTP_STATUS_NO_ACCEPT, HTTP_MSG_NO_ACCEPT, req);
 
-    return server_handle_invalids(server, HTTP_STATUS_UNFOUND, HTTP_MSG_UNFOUND, req);
+    return server_handle_invalids(server, HTTP_STATUS_SERVER_ERR, HTTP_MSG_SERVER_ERR, req);
 
     return H1C_SEND;
 }
@@ -197,6 +192,8 @@ H1CState server_st_recv(H1CServer *server)
 {
     if (!h1scanner_read_reqinfo(&server->msg_reader, &server->req))
         return H1C_ERROR;
+
+    printf("(H1req) = {schema: %i, method: %i, ...}\n", server->req.schema_id, server->req.method_id); // debug
 
     return H1C_PROCESS;
 }

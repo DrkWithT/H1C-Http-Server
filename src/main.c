@@ -1,8 +1,8 @@
 /**
  * @file main.c
  * @author Derek Tan
- * @brief Implements driver code.
- * @version 0.0.1
+ * @brief Implements driver code for the "H1C" server.
+ * @version 0.1.0
  * @date 2023-08-29
  * 
  * @copyright Copyright (c) 2023
@@ -22,7 +22,7 @@ static const char *www_dir_files[WWW_FILE_COUNT] = {
 
 /* Handler Funcs. */
 
-HandlerStatus handle_root(HandlerContext *ctx, BaseRequest *req, ResponseObj *res)
+HandlerStatus handle_root(const HandlerContext *ctx, const BaseRequest *req, ResponseObj *res)
 {
     const ResourceTable *restable_ref = &ctx->resources;
     const StaticResource *resrc_ref = restable_get(restable_ref, "./www/index.html");
@@ -30,7 +30,22 @@ HandlerStatus handle_root(HandlerContext *ctx, BaseRequest *req, ResponseObj *re
     if (!resrc_ref)
         return HANDLE_GENERAL_ERR;
 
-    resinfo_set_mime_type(res, TXT_HTML);
+    resinfo_set_mime_type(res, statsrc_get_type(resrc_ref));
+    resinfo_set_content_length(res, statsrc_get_length(resrc_ref));
+    resinfo_set_body_payload(res, resrc_ref->data);
+
+    return HANDLE_OK;
+}
+
+HandlerStatus handle_index_css(const HandlerContext *ctx, const BaseRequest *req, ResponseObj *res)
+{
+    const ResourceTable *restable_ref = &ctx->resources;
+    const StaticResource *resrc_ref = restable_get(restable_ref, "./www/index.css");
+
+    if (!resrc_ref)
+        return HANDLE_GENERAL_ERR;
+
+    resinfo_set_mime_type(res, statsrc_get_type(resrc_ref));
     resinfo_set_content_length(res, statsrc_get_length(resrc_ref));
     resinfo_set_body_payload(res, resrc_ref->data);
 
@@ -64,10 +79,19 @@ int main(int argc, char *argv[])
     ctx_ok = server_setup_ctx(&server, www_dir_files, WWW_FILE_COUNT);
 
     /// 1c. Load handlers to server.
-    handlers_ok = server_add_handler(&server, "/", GET, ANY_ANY, handle_root);
+    handlers_ok = server_add_handler(&server, "/", GET, ANY_ANY, handle_root) && server_add_handler(&server, "/index.css", GET, ANY_ANY, handle_index_css);
 
     /// 2. Run server... Automatically cleans up resources after service in server_run(...).
-    server_run(&server);
+    if (ctx_ok && handlers_ok)
+    {
+        puts("Launching server.");
+        server_run(&server);
+    }
+    else
+    {
+        perror("Failed to launch server.");
+        server_end(&server);
+    }
 
     return 0;
 }

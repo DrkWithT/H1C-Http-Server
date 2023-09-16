@@ -1,7 +1,7 @@
 /**
  * @file main.c
  * @author Derek Tan
- * @brief Implements driver code for the "H1C" server.
+ * @brief Implements driver code for the "H1C" server. See README for more details.
  * @version 0.2.0
  * @date 2023-08-29
  * 
@@ -31,7 +31,7 @@ HandlerStatus handle_root(const HandlerContext *ctx, const BaseRequest *req, Res
     if (!resrc_ref)
         return HANDLE_GENERAL_ERR;
 
-    resinfo_set_mime_type(res, statsrc_get_type(resrc_ref));
+    resinfo_set_mime_type(res, TXT_HTML);
     resinfo_set_content_length(res, statsrc_get_length(resrc_ref));
     resinfo_set_body_payload(res, resrc_ref->data);
 
@@ -46,7 +46,7 @@ HandlerStatus handle_index_css(const HandlerContext *ctx, const BaseRequest *req
     if (!resrc_ref)
         return HANDLE_GENERAL_ERR;
 
-    resinfo_set_mime_type(res, statsrc_get_type(resrc_ref));
+    resinfo_set_mime_type(res, TXT_CSS);
     resinfo_set_content_length(res, statsrc_get_length(resrc_ref));
     resinfo_set_body_payload(res, resrc_ref->data);
 

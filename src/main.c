@@ -2,7 +2,7 @@
  * @file main.c
  * @author Derek Tan
  * @brief Implements driver code for the "H1C" server.
- * @version 0.1.0
+ * @version 0.2.0
  * @date 2023-08-29
  * 
  * @copyright Copyright (c) 2023
@@ -15,8 +15,9 @@
 
 #define WWW_FILE_COUNT 2
 
+static H1CServer server;
 static const char *www_dir_files[WWW_FILE_COUNT] = {
-    "./www/index.html",
+    "./www/hello.html",
     "./www/index.css"
 };
 
@@ -25,7 +26,7 @@ static const char *www_dir_files[WWW_FILE_COUNT] = {
 HandlerStatus handle_root(const HandlerContext *ctx, const BaseRequest *req, ResponseObj *res)
 {
     const ResourceTable *restable_ref = &ctx->resources;
-    const StaticResource *resrc_ref = restable_get(restable_ref, "./www/index.html");
+    const StaticResource *resrc_ref = restable_get(restable_ref, "./www/hello.html");
 
     if (!resrc_ref)
         return HANDLE_GENERAL_ERR;
@@ -52,10 +53,15 @@ HandlerStatus handle_index_css(const HandlerContext *ctx, const BaseRequest *req
     return HANDLE_OK;
 }
 
+void handle_signal_stops()
+{
+    // On SIGINT, etc, close server and cleanup its state.
+    server_end(&server);
+}
+
 int main(int argc, char *argv[])
 {
     /// 1a. Setup server state.
-    H1CServer server;
     bool ctx_ok = true;      // if resources in context loaded 
     bool handlers_ok = true; // if handlers loaded
 
@@ -79,17 +85,21 @@ int main(int argc, char *argv[])
     ctx_ok = server_setup_ctx(&server, www_dir_files, WWW_FILE_COUNT);
 
     /// 1c. Load handlers to server.
-    handlers_ok = server_add_handler(&server, "/", GET, ANY_ANY, handle_root) && server_add_handler(&server, "/index.css", GET, ANY_ANY, handle_index_css);
+    handlers_ok = server_add_handler(&server, "/home", GET, ANY_ANY, handle_root)
+        && server_add_handler(&server, "/index.css", GET, ANY_ANY, handle_index_css);
+
+    /// 1d. Put exit handler for graceful cleanup.
+    atexit(handle_signal_stops);
 
     /// 2. Run server... Automatically cleans up resources after service in server_run(...).
     if (ctx_ok && handlers_ok)
     {
-        puts("Launching server.");
+        puts("Launching server");
         server_run(&server);
     }
     else
     {
-        perror("Failed to launch server.");
+        perror("Failed to launch server");
         server_end(&server);
     }
 

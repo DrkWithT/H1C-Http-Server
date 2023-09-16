@@ -19,7 +19,7 @@ bool restable_init(ResourceTable *restable, uint16_t count)
 
     temp_capacity <<= 1;  // I double this capacity from the count since a 0.5 load factor really reduces collisions.
 
-    ResourceTable **ref_buckets = malloc(temp_capacity * sizeof(ResourceTable *));
+    StaticResource **ref_buckets = malloc(temp_capacity * sizeof(StaticResource *));
     bool init_ok = ref_buckets != NULL;
 
     if (init_ok)

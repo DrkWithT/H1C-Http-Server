@@ -17,7 +17,7 @@ void h1chandler_init(H1CHandler *handler, HttpMethod method, MimeType mime, Hand
     handler->callback = callback;
 }
 
-HandlerStatus h1chandler_check_req(const H1CHandler *handler, BaseRequest *req)
+HandlerStatus h1chandler_check_req(const H1CHandler *handler, const BaseRequest *req)
 {
     if (req->method_id != handler->method)
         return HANDLE_BAD_METHOD;

@@ -14,7 +14,7 @@ typedef struct handlerctx_t
 
 /* HandlerContext Funcs. */
 
-void handlerctx_init(HandlerContext *handlerctx, uint16_t fcount, const char *fnames[]);
+bool handlerctx_init(HandlerContext *handlerctx, uint16_t fcount, const char *fnames[]);
 void handlerctx_dispose(HandlerContext *handlerctx);
 inline bool handlerctx_ready(const HandlerContext *handlerctx);
 const StaticResource *handlerctx_get_resrc(const HandlerContext *handlerctx, const char *fname);

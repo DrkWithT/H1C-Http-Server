@@ -19,7 +19,7 @@ typedef enum handler_status_e
 /**
  * @brief An alias for normal handler logic.
  */
-typedef HandlerStatus (*HandlerFunc)(HandlerContext *ctx, BaseRequest *req, ResponseObj *res);
+typedef HandlerStatus (*HandlerFunc)(const HandlerContext *ctx, const BaseRequest *req, ResponseObj *res);
 
 /**
  * @brief An alias for error handler logic
@@ -56,7 +56,7 @@ void h1chandler_init(H1CHandler *handler, HttpMethod method, MimeType mime, Hand
  * @param req
  * @returns HandlerStatus OK if valid
  */
-HandlerStatus h1chandler_check_req(const H1CHandler *handler, BaseRequest *req);
+HandlerStatus h1chandler_check_req(const H1CHandler *handler, const BaseRequest *req);
 
 /**
  * @brief Runs either the normal handler logic based on the request data.

@@ -14,8 +14,6 @@
 
 MimeType filename_get_mime(const char *fname)
 {
-    size_t fname_len = strlen(fname);
-    size_t count = 0;
     const char *cursor = fname;
     char temp = *cursor;
 
@@ -30,7 +28,6 @@ MimeType filename_get_mime(const char *fname)
 
         cursor++;
         temp = *cursor;
-        count++;
     }
 
     if (strncmp(cursor, FILE_EXT_TXT, 4) == 0)
@@ -76,7 +73,11 @@ char *file_read_all(const char *fname, size_t *read_count_ref)
         buf_size = buf_end;
     }
 
+    fclose(fs);
+    fs = NULL;
+
     *read_count_ref = buf_size;
+
     return data;
 }
 

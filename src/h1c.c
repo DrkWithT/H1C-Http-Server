@@ -27,9 +27,7 @@ void server_init(H1CServer *server, const char *host_str, const char *port_str, 
 
 bool server_setup_ctx(H1CServer *server, const char *fnames[], uint16_t fcount)
 {
-    handlerctx_init(&server->ctx, fcount, fnames);
-
-    return &server->ctx.ready;
+    return handlerctx_init(&server->ctx, fcount, fnames);
 }
 
 bool server_add_handler(H1CServer *server, const char *path, HttpMethod method, MimeType mime, HandlerFunc callback)
@@ -37,7 +35,7 @@ bool server_add_handler(H1CServer *server, const char *path, HttpMethod method, 
     RoutrieNode *handler_item = routrie_node_create('\0', method, mime, callback);
 
     if (handler_item != NULL)
-        return routrie_(&server->router, path, handler_item); // FIX!
+        return routrie_add(&server->router, path, handler_item);
 
     return false;
 }
@@ -126,7 +124,7 @@ H1CState server_handle_valids(H1CServer *server, const BaseRequest *req)
 
     ResponseObj *reply_ref = &server->res;
     const Routrie *router_ref = &server->router;
-    const RoutrieNode *handler_item = routrie_get(router_ref, req->path_str);
+    const RoutrieNode *handler_item = routrie_get(router_ref, temp_url);
 
     if (!handler_item)
         return server_handle_invalids(server, HTTP_STATUS_UNFOUND, HTTP_MSG_UNFOUND, req);
@@ -148,7 +146,11 @@ H1CState server_handle_valids(H1CServer *server, const BaseRequest *req)
         break;
     }
 
-    HandlerStatus main_handler_status = h1chandler_handle(&handler_item->normal_handler, &server->ctx, req, reply_ref);
+    const H1CHandler *handler_ref = &handler_item->normal_handler;
+
+    HandlerStatus main_handler_status = (handler_ref->method == temp_method)
+        ? h1chandler_handle(handler_ref, &server->ctx, req, reply_ref)
+        : HANDLE_BAD_METHOD;
 
     // NOTE: Exits with an OK send from this helper if the response was well made... This is for correctness of response semantics.
     if (main_handler_status == HANDLE_OK)

@@ -12,7 +12,7 @@
 
 /* HandlerContext Funcs. */
 
-void handlerctx_init(HandlerContext *handlerctx, uint16_t fcount, const char *fnames[])
+bool handlerctx_init(HandlerContext *handlerctx, uint16_t fcount, const char *fnames[])
 {
     bool table_ok = restable_init(&handlerctx->resources, fcount);
     bool put_ok = true;
@@ -41,6 +41,8 @@ void handlerctx_init(HandlerContext *handlerctx, uint16_t fcount, const char *fn
     }
 
     handlerctx->ready = table_ok && put_ok;
+
+    return handlerctx->ready;
 }
 
 void handlerctx_dispose(HandlerContext *handlerctx)

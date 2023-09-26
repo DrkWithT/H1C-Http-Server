@@ -60,6 +60,13 @@ void serversocket_init(ServerSocket *svr_sock, const char *host, const char *por
         svr_sock->closed = true;
     }
 
+    // Set connection timeout of 2.5s to reduce worker stalling.
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 2500;
+
+    setsockopt(svr_sock->fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
     svr_sock->ready = ready_flag;
     svr_sock->closed = false;
 }

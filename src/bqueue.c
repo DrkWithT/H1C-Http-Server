@@ -34,12 +34,13 @@ bool bqueue_init(BlockedQueue *bqueue, int8_t capacity)
         : BQUEUE_MIN_SIZE;
     
     bool lock_ok = pthread_mutex_init(&bqueue->lock, NULL) == 0;
+    bool signaler_ok = pthread_cond_init(&bqueue->signaler, NULL);
     bqueue->head = NULL;
     bqueue->tip = NULL;
     bqueue->capacity = safe_capacity;
     bqueue->count = 0;
 
-    return lock_ok;
+    return lock_ok && signaler_ok;
 }
 
 void bqueue_destroy(BlockedQueue *bqueue)
@@ -62,12 +63,22 @@ void bqueue_destroy(BlockedQueue *bqueue)
 
 bool bqueue_is_empty(const BlockedQueue *bqueue)
 {
-    return bqueue->count == 0 || !bqueue->head;
+    pthread_mutex_lock(&bqueue->lock);
+
+    bool empty = bqueue->count == 0 || !bqueue->head;
+
+    pthread_mutex_unlock(&bqueue->lock);
+    return empty;
 }
 
 bool bqueue_is_full(const BlockedQueue *bqueue)
 {
-    return bqueue->count >= bqueue->capacity;
+    pthread_mutex_lock(&bqueue->lock);
+
+    bool full = bqueue->count >= bqueue->capacity;
+
+    pthread_mutex_unlock(&bqueue->lock);
+    return full;
 }
 
 QueueNode *bqueue_dequeue(BlockedQueue *bqueue)
@@ -75,9 +86,9 @@ QueueNode *bqueue_dequeue(BlockedQueue *bqueue)
     if (bqueue_is_empty(bqueue))
         return NULL;
     
-    QueueNode *node = bqueue->head;
-
     pthread_mutex_lock(&bqueue->lock);
+
+    QueueNode *node = bqueue->head;
 
     bqueue->head = node->next;
     node->next = NULL;
@@ -87,6 +98,7 @@ QueueNode *bqueue_dequeue(BlockedQueue *bqueue)
 
     pthread_mutex_unlock(&bqueue->lock);
 
+    pthread_cond_signal(&bqueue->signaler);
     return node;
 }
 
@@ -111,5 +123,7 @@ bool bqueue_enqueue(BlockedQueue *bqueue, QueueNode *node)
     bqueue->count++;
 
     pthread_mutex_unlock(&bqueue->lock);
+
+    pthread_cond_signal(&bqueue->signaler);
     return true;
 }

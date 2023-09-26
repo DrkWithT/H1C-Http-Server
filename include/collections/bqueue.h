@@ -25,9 +25,10 @@ typedef struct bqueue_t
 {
     int8_t count;
     int8_t capacity;
-    pthread_mutex_t lock;  // prevents race conditions of queue data
-    QueueNode *head;       // first node
-    QueueNode *tip;        // last node
+    pthread_mutex_t lock;    // prevents race conditions of queue data
+    pthread_cond_t signaler; // semaphore to wake any consumer threads
+    QueueNode *head;         // first node
+    QueueNode *tip;          // last node
 } BlockedQueue;
 
 /* QueueNode Funcs. */

@@ -1,7 +1,7 @@
 /**
  * @file bqueue.c
  * @author Derek Tan
- * @brief Implements a synchronized queue using an internal singly-linked list.
+ * @brief Implements a write-synchronized queue using an internal singly-linked list.
  * @date 2023-09-22
  * 
  * @copyright Copyright (c) 2023
@@ -63,21 +63,15 @@ void bqueue_destroy(BlockedQueue *bqueue)
 
 bool bqueue_is_empty(const BlockedQueue *bqueue)
 {
-    pthread_mutex_lock(&bqueue->lock);
-
     bool empty = bqueue->count == 0 || !bqueue->head;
 
-    pthread_mutex_unlock(&bqueue->lock);
     return empty;
 }
 
 bool bqueue_is_full(const BlockedQueue *bqueue)
 {
-    pthread_mutex_lock(&bqueue->lock);
-
     bool full = bqueue->count >= bqueue->capacity;
 
-    pthread_mutex_unlock(&bqueue->lock);
     return full;
 }
 
@@ -85,8 +79,6 @@ QueueNode *bqueue_dequeue(BlockedQueue *bqueue)
 {
     if (bqueue_is_empty(bqueue))
         return NULL;
-    
-    pthread_mutex_lock(&bqueue->lock);
 
     QueueNode *node = bqueue->head;
 
@@ -96,9 +88,6 @@ QueueNode *bqueue_dequeue(BlockedQueue *bqueue)
     if (!bqueue->head)
         bqueue->tip = NULL;
 
-    pthread_mutex_unlock(&bqueue->lock);
-
-    pthread_cond_signal(&bqueue->signaler);
     return node;
 }
 
@@ -123,7 +112,5 @@ bool bqueue_enqueue(BlockedQueue *bqueue, QueueNode *node)
     bqueue->count++;
 
     pthread_mutex_unlock(&bqueue->lock);
-
-    pthread_cond_signal(&bqueue->signaler);
     return true;
 }

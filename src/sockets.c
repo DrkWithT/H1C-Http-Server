@@ -1,7 +1,7 @@
 /**
  * @file sockets.c
  * @author Derek Tan
- * @brief Implements socket wrappers and helper functions. 
+ * @brief Implements synchronous I/O wrappers for TCP sockets. 
  * @date 2023-09-01
  * 
  * @copyright Copyright (c) 2023
@@ -101,7 +101,7 @@ int serversocket_accept(ServerSocket *svr_sock)
 void clientsocket_init(ClientSocket *cli_sock, int fd)
 {
     cli_sock->fd = fd;
-    cli_sock->closed = (fd != -1);
+    cli_sock->closed = (fd == -1);
 }
 
 void clientsocket_close(ClientSocket *cli_sock)

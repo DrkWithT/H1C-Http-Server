@@ -9,6 +9,7 @@
  * 
  */
 
+#include <signal.h>
 #include "server/core.h"
 
 /* Constants and Helper Macros */
@@ -16,6 +17,7 @@
 #define WWW_FILE_COUNT 2
 
 static ServerDriver server;
+static int server_wthrd_count = 0;
 static const char *www_dir_files[WWW_FILE_COUNT] = {
     "./www/hello.html",
     "./www/index.css"
@@ -57,12 +59,13 @@ void handle_signal_stops()
 {
     // On SIGINT, etc, close server and cleanup its state.
     fprintf(stdout, "%s: recieved interrupt.\n", H1C_VERSION_STRING);
-    server_core_cleanup(&server);
+    server_core_cleanup(&server, server_wthrd_count);
 }
 
 int main(int argc, char *argv[])
 {
     /// 1a. Setup server state.
+    struct sigaction sa;
     bool ctx_ok = true;      // if resources in context loaded 
     bool handlers_ok = true; // if handlers loaded
 
@@ -88,19 +91,21 @@ int main(int argc, char *argv[])
     /// 1c. Load handlers to server.
     handlers_ok = server_core_put_handler(&server, "/home", GET, ANY_ANY, handle_root) && server_core_put_handler(&server, "/index.css", GET, ANY_ANY, handle_index_css);
 
-    /// 1d. Put exit handler for graceful cleanup.
-    atexit(handle_signal_stops);
+    /// 1d. Put exit on interrupt handler for graceful cleanup.
+    sa.sa_handler = handle_signal_stops;
+    sigaction(SIGINT, &sa, NULL);
 
     /// 2. Run server... Automatically cleans up resources after service in server_run(...).
     if (ctx_ok && handlers_ok)
     {
-        server_core_run(&server);
+        int server_wthrd_count = server_core_run(&server);
+        server_core_join(&server, server_wthrd_count);
         fprintf(stdout, "%s: Launched server!\n", H1C_VERSION_STRING);
     }
     else
     {
         fprintf(stderr, "%s: Could not start, please check terminal output.\n", H1C_VERSION_STRING);
-        server_core_cleanup(&server);
+        server_core_cleanup(&server, server_wthrd_count);
     }
 
     return 0;

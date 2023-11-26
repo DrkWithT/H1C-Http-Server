@@ -23,7 +23,7 @@ SRCS := $(shell find $(SRC_DIR) -name '*.c')
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
 
 # executable generate path
-EXE := $(BIN_DIR)/h1cserver
+EXE := $(BIN_DIR)/h1cserver_c
 
 vpath %.c $(SRC_DIR)
 

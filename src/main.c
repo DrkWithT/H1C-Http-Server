@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        perror("usage: h1cserver <port?>");
+        fprintf(stderr, "usage: %s <port?>", argv[0]);
         return 1;
     }
 

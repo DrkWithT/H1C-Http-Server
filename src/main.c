@@ -9,13 +9,13 @@
  * 
  */
 
-#include "server/h1c.h"
+#include "server/core.h"
 
 /* Constants and Helper Macros */
 
 #define WWW_FILE_COUNT 2
 
-static H1CServer server;
+static ServerDriver server;
 static const char *www_dir_files[WWW_FILE_COUNT] = {
     "./www/hello.html",
     "./www/index.css"
@@ -56,7 +56,8 @@ HandlerStatus handle_index_css(const HandlerContext *ctx, const BaseRequest *req
 void handle_signal_stops()
 {
     // On SIGINT, etc, close server and cleanup its state.
-    server_end(&server);
+    fprintf(stdout, "%s: recieved interrupt.\n", H1C_VERSION_STRING);
+    server_core_cleanup(&server);
 }
 
 int main(int argc, char *argv[])
@@ -68,12 +69,12 @@ int main(int argc, char *argv[])
     if (argc == 1)
     {
         // Use default host port if none is given in ARGV for user friendliness.
-        server_init(&server, H1C_HOSTNAME, H1C_DEFAULT_PORT, 4);
+        server_core_init(&server, H1C_DEFAULT_HOSTNAME, H1C_DEFAULT_PORT, H1C_DEFAULT_BACKLOG);
     }
     else if (argc == 2 && atoi(argv[1]) > 1024)
     {
         // Use non-reserved port (1025+) to host server to prevent any extra socket errors.
-        server_init(&server, H1C_HOSTNAME, argv[1], 4);
+        server_core_init(&server, H1C_DEFAULT_HOSTNAME, argv[1], H1C_DEFAULT_BACKLOG);
     }
     else
     {
@@ -82,11 +83,10 @@ int main(int argc, char *argv[])
     }
 
     /// 1b. Load resources to server.
-    ctx_ok = server_setup_ctx(&server, www_dir_files, WWW_FILE_COUNT);
+    ctx_ok = server_core_setup_hdctx(&server, www_dir_files, WWW_FILE_COUNT);
 
     /// 1c. Load handlers to server.
-    handlers_ok = server_add_handler(&server, "/home", GET, ANY_ANY, handle_root)
-        && server_add_handler(&server, "/index.css", GET, ANY_ANY, handle_index_css);
+    handlers_ok = server_add_handler(&server, "/home", GET, ANY_ANY, handle_root) && server_add_handler(&server, "/index.css", GET, ANY_ANY, handle_index_css);
 
     /// 1d. Put exit handler for graceful cleanup.
     atexit(handle_signal_stops);
@@ -94,13 +94,13 @@ int main(int argc, char *argv[])
     /// 2. Run server... Automatically cleans up resources after service in server_run(...).
     if (ctx_ok && handlers_ok)
     {
-        puts("Launching server");
-        server_run(&server);
+        server_core_run(&server);
+        fprintf(stdout, "%s: Launched server!\n", H1C_VERSION_STRING);
     }
     else
     {
-        perror("Failed to launch server");
-        server_end(&server);
+        fprintf(stderr, "%s: Could not start, please check terminal output.\n", H1C_VERSION_STRING);
+        server_core_cleanup(&server);
     }
 
     return 0;

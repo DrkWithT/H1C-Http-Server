@@ -29,6 +29,9 @@ void lstworker_work(ListenWorker *lstworker)
     int temp_fd = -1;
     QueueNode *temp_task = NULL;
 
+    if (!serversocket_open(lstworker->srvsock_ref))
+        return;
+
     while (lstworker->is_listening)
     {
         // 1. Accept client connection to possibly handle...
@@ -37,6 +40,7 @@ void lstworker_work(ListenWorker *lstworker)
         if (temp_fd == -1)
         {
             // Handle listening error... try again in case another connection is pending!
+            fprintf(stdout, "worker %i log: Invalid connection fd.\n", 0);
             continue;
         }
 
@@ -53,6 +57,7 @@ void lstworker_work(ListenWorker *lstworker)
 
         if (!bqueue_enqueue(lstworker->bqueue_ref, temp_task))
         {
+            fprintf(stdout, "worker %i log: Failed to put task.", 0);
             close(temp_task->data);
             continue;
         }

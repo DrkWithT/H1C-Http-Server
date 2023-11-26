@@ -29,6 +29,7 @@ void srvworker_init(ServerWorker *srvworker, int worker_id, RouteMap *router_ref
 
 void srvworker_dispose(ServerWorker *srvworker)
 {
+    srvworker->must_abort = true;
     clientsocket_close(&srvworker->clisock);
 
     h1scanner_dispose(&srvworker->scanner);
@@ -37,6 +38,8 @@ void srvworker_dispose(ServerWorker *srvworker)
     srvworker->router_ref = NULL;
     srvworker->ctx_ref = NULL;
     srvworker->bqueue_ref = NULL;
+
+    fprintf(stdout, "Disposed worker %i\n", srvworker->wid);
 }
 
 ServerWorkerState srvworker_consume(ServerWorker *srvworker)
@@ -228,8 +231,6 @@ void *run_srvworker(void *srvworker_ref)
             srvworker->state = SWORKER_END;
         }
     }
-
-    srvworker_dispose(srvworker);
 
     return NULL;
 }

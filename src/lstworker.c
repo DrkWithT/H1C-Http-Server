@@ -67,6 +67,8 @@ void *lstworker_run(void *lstworker_ref)
 {
     ListenWorker *lstworker = (ListenWorker *)lstworker_ref;
 
+    fprintf(stdout, "Starting producer.\n");
+
     lstworker_work(lstworker);
 
     return NULL;

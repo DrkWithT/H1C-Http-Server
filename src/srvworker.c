@@ -12,8 +12,9 @@
 
 /* ServerWorker Funcs. */
 
-void srvworker_init(ServerWorker *srvworker, RouteMap *router_ref, HandlerContext *ctx_ref, BlockedQueue *bqueue_ref, const char *server_name)
+void srvworker_init(ServerWorker *srvworker, int worker_id, RouteMap *router_ref, HandlerContext *ctx_ref, BlockedQueue *bqueue_ref, const char *server_name)
 {
+    srvworker->wid = worker_id;
     srvworker->state = SWORKER_START;
     srvworker->must_abort = false;
     basic_reqinfo_init(&srvworker->request);
@@ -107,7 +108,7 @@ ServerWorkerState srvworker_process_ok(ServerWorker *srvworker, const BaseReques
     }
 
     // Extract handler object from the fetched routing tree node... I also see its status checks for more specific error handling.
-    const H1CHandler *handler_ref = rtdnode_get_handler(&srvworker->router_ref);
+    const H1CHandler *handler_ref = rtdnode_get_handler(handler_item);
 
     HandlerStatus main_handler_status = (handler_ref->method == req_method)
         ? h1chandler_handle(handler_ref, srvworker->ctx_ref, req_ref, res_ref)
@@ -197,6 +198,8 @@ ServerWorkerState srvworker_reset(ServerWorker *srvworker)
 void *run_srvworker(void *srvworker_ref)
 {
     ServerWorker *srvworker = (ServerWorker *) srvworker_ref;
+
+    fprintf(stdout, "Started worker %i\n", srvworker->wid);
 
     while (srvworker->state != SWORKER_END && !srvworker->must_abort)
     {

@@ -23,6 +23,7 @@ typedef enum srvworker_state_e
 
 typedef struct srvworker_t
 {
+    int wid;
     ServerWorkerState state;  // controlling FSM status for worker actions 
     bool must_abort; // special flag to indicate an early stop 
 
@@ -40,7 +41,7 @@ typedef struct srvworker_t
 
 /* ServerWorker Funcs. */
 
-void srvworker_init(ServerWorker *srvworker, RouteMap *router_ref, HandlerContext *ctx_ref, BlockedQueue *bqueue_ref, const char *server_name);
+void srvworker_init(ServerWorker *srvworker, int worker_id, RouteMap *router_ref, HandlerContext *ctx_ref, BlockedQueue *bqueue_ref, const char *server_name);
 
 /**
  * @brief Special cleanup function for ServerWorker data... Only meant to be used in final server cleanup AFTER the worker thread ends.

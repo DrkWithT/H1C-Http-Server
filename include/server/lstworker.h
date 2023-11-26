@@ -1,6 +1,7 @@
 #ifndef LSTWORKER_H
 #define LSTWORKER_H
 
+#include <stdio.h>
 #include "basicio/sockets.h"
 #include "collections/bqueue.h"
 

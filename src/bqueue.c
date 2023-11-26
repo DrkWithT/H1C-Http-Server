@@ -63,6 +63,9 @@ void bqueue_destroy(BlockedQueue *bqueue)
     
     bqueue->tip = NULL;
     bqueue->count = 0;
+
+    pthread_cond_destroy(&bqueue->signaler);
+    pthread_mutex_destroy(&bqueue->lock);
 }
 
 bool bqueue_is_empty(const BlockedQueue *bqueue)

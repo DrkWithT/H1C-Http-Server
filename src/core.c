@@ -43,7 +43,7 @@ bool server_core_put_handler(ServerDriver *server, const char *path, HttpMethod 
     return rtemap_put(&server->router, handler_node);
 }
 
-bool server_core_setup_thrd_states(ServerDriver *server)
+void server_core_setup_thrd_states(ServerDriver *server)
 {
     // setup producer and workers' state
     lstworker_init(&server->producer_obj, &server->entry_socket, &server->task_queue);
@@ -52,45 +52,57 @@ bool server_core_setup_thrd_states(ServerDriver *server)
     {
         srvworker_init(&server->workers[i], i + 1, &server->router, &server->ctx, &server->task_queue, H1C_VERSION_STRING);
     }
-
-    return true;
 }
 
-void server_core_run(ServerDriver *server)
+int server_core_run(ServerDriver *server)
 {
+    // Initialize all producer & worker state...
+    int started_worker_count = 0;
+    server_core_setup_thrd_states(server);
+
     // Try starting producer thread first since the workers require tasks before doing work...
     if (pthread_create(&server->thread_ids[0], NULL, lstworker_run, &server->producer_obj) != 0)
-        return;
-
-    if (pthread_join(server->thread_ids[0], NULL) != 0)
-        return;
+        return started_worker_count;
 
     // Try starting workers since tasks are possibly available or incoming...
     for (int pthrd_i = 1; pthrd_i < H1C_TOTAL_THREADS; pthrd_i++)
     {
-        if (pthread_create(&server->thread_ids[pthrd_i], NULL, run_srvworker, &server->workers[pthrd_i - 1]) != 0)
+        if (pthread_create(&server->thread_ids[pthrd_i], NULL, run_srvworker, &server->workers[started_worker_count]) != 0)
             break;
+        
+        started_worker_count++;
+    }
 
-        if (pthread_join(server->thread_ids[pthrd_i], NULL) != 0)
+    return started_worker_count;
+}
+
+void server_core_join(ServerDriver *server, int wthrd_count)
+{
+    if (!wthrd_count)
+        return;
+
+    for (int wthrd_i = 0; wthrd_i < wthrd_count; wthrd_i++)
+    {
+        if (pthread_join(server->thread_ids[1 + wthrd_i], NULL) != 0)
             break;
     }
 }
 
-void server_core_cleanup(ServerDriver *server)
+void server_core_cleanup(ServerDriver *server, int wthrd_count)
 {
     // Stop and dispose producer and workers...
     lstworker_end(&server->producer_obj);
 
-    for (int worker_i = 1; worker_i < H1C_WORKER_COUNT; worker_i++)
-    {
-        server->workers[worker_i].must_abort = true;
-    }
+    for (int worker_i = 0; worker_i < wthrd_count; worker_i++)
+        srvworker_dispose(&server->workers[worker_i]);
 
-    // Each server worker times out its socket in 2.5s, so waiting a little longer for them to realize they should abort is ok.
-    fprintf(stdout, "%s:%d Log: waiting for workers to halt.", __FILE__, __LINE__);
-    sleep(H1C_WORKER_COUNT * 3); // Worst case: each of the 4 workers has pending tasks each for 2.5s in order.
+    // Wake up workers... they will stop on realization that they must abort.
+    fprintf(stdout, "%s log: Signaling workers to quit.\n", H1C_VERSION_STRING);
+    pthread_cond_broadcast(&server->task_queue.signaler);
 
     // Dispose other memory / resources...
+    fprintf(stdout, "%s log: Disposing routes and handlers.\n", H1C_VERSION_STRING);
+    bqueue_destroy(&server->task_queue);
     rtemap_dispose(&server->router);
     handlerctx_dispose(&server->ctx);
 }

@@ -8,7 +8,7 @@
 
 #define H1C_VERSION_STRING "H1C/0.3.0"
 #define H1C_DEFAULT_HOSTNAME "127.0.0.1"
-#define H1C_DEFAULT_PORT "6000"
+#define H1C_DEFAULT_PORT "8000"
 #define H1C_DEFAULT_BACKLOG 4
 #define H1C_WORKER_COUNT 4
 #define H1C_TOTAL_THREADS (H1C_WORKER_COUNT + 1)
@@ -32,8 +32,9 @@ typedef struct h1c_core_t
 bool server_core_init(ServerDriver *server, const char *host_name, const char *port, int backlog);
 bool server_core_setup_hdctx(ServerDriver *server, const char *file_names[], uint16_t file_count);
 bool server_core_put_handler(ServerDriver *server, const char *path, HttpMethod method, MimeType mime, HandlerFunc callback);
-bool server_core_setup_thrd_states(ServerDriver *server);
-void server_core_run(ServerDriver *server);
-void server_core_cleanup(ServerDriver *server);
+void server_core_setup_thrd_states(ServerDriver *server);
+int server_core_run(ServerDriver *server);
+void server_core_join(ServerDriver *server, int wthrd_count);
+void server_core_cleanup(ServerDriver *server, int wthrd_count);
 
 #endif

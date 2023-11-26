@@ -1,4 +1,5 @@
 # ignore other dirs, files
+.DS_Store
 bin/
 build/
 .vscode/

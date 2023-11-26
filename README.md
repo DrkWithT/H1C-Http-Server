@@ -1,7 +1,7 @@
 # README
 
 ## Brief
-This repo contains files and code for a minimal, toy HTTP/1.x server. The software is **NOT** intended for production usage, and it is not fully portable since it is made from scratch on Mac OS. Other Linux systems will likely support the C standard library and UNIX networking headers, but Windows will not!
+This repo contains files and code for a minimal, toy HTTP/1.x server. Other Linux systems will likely support the C standard library and UNIX networking headers, but Windows will not. Not for production usage but for learning purposes.
 
 ## References
  - [HTTP 1.x Introduction](https://jmarshall.com/easy/http/)
@@ -9,7 +9,7 @@ This repo contains files and code for a minimal, toy HTTP/1.x server. The softwa
 ## Usage
  - Run `make all` to build the program.
  - Enter `./h1cserver` to run the server on default port 8080.
- - Enter `./h1cserver n` to run the server on port n where n is a positive integer.
+ - Enter `./h1cserver n` to run the server on port n where n is at least 1024.
  - Enter `make clean && make all` after changes to refresh the build.
 
 ## To Do's
@@ -20,5 +20,6 @@ This repo contains files and code for a minimal, toy HTTP/1.x server. The softwa
     - ~~Implement static resources.~~
     - ~~Implement date utility and resource cache before packing them into a context object.~~
     - ~~Add context argument to callback & fallback function signatures.~~
-    - Complete `RouteMap`: BST with strcmp values as keys.
-    - Integrate `RouteMap` into main server logic.
+    - ~~Integrate `RouteMap` into main server logic.~~
+    - Possibly refactor server to use thread pools: `BlockedQueue`, `ServerListener`, `ServerWorker` (WIP)
+    - Refactor H1CServer object to reuse thread pool logic.

@@ -50,7 +50,7 @@ bool server_core_setup_thrd_states(ServerDriver *server)
     
     for (int i = 0; i < H1C_WORKER_COUNT; i++)
     {
-        srvworker_init(&server->workers[i], &server->router, &server->ctx, &server->task_queue, H1C_VERSION_STRING);
+        srvworker_init(&server->workers[i], i + 1, &server->router, &server->ctx, &server->task_queue, H1C_VERSION_STRING);
     }
 
     return true;
@@ -62,7 +62,7 @@ void server_core_run(ServerDriver *server)
     if (pthread_create(&server->thread_ids[0], NULL, lstworker_run, &server->producer_obj) != 0)
         return;
 
-    if (pthread_join(&server->thread_ids[0], NULL) != 0)
+    if (pthread_join(server->thread_ids[0], NULL) != 0)
         return;
 
     // Try starting workers since tasks are possibly available or incoming...
@@ -71,7 +71,7 @@ void server_core_run(ServerDriver *server)
         if (pthread_create(&server->thread_ids[pthrd_i], NULL, run_srvworker, &server->workers[pthrd_i - 1]) != 0)
             break;
 
-        if (pthread_join(&server->thread_ids[pthrd_i], NULL) != 0)
+        if (pthread_join(server->thread_ids[pthrd_i], NULL) != 0)
             break;
     }
 }
@@ -87,7 +87,7 @@ void server_core_cleanup(ServerDriver *server)
     }
 
     // Each server worker times out its socket in 2.5s, so waiting a little longer for them to realize they should abort is ok.
-    fprintf(stdout, "Log from %s:%s: waiting for workers to halt.", __FILE__, __LINE__);
+    fprintf(stdout, "%s:%d Log: waiting for workers to halt.", __FILE__, __LINE__);
     sleep(H1C_WORKER_COUNT * 3); // Worst case: each of the 4 workers has pending tasks each for 2.5s in order.
 
     // Dispose other memory / resources...

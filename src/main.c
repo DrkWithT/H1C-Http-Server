@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     ctx_ok = server_core_setup_hdctx(&server, www_dir_files, WWW_FILE_COUNT);
 
     /// 1c. Load handlers to server.
-    handlers_ok = server_add_handler(&server, "/home", GET, ANY_ANY, handle_root) && server_add_handler(&server, "/index.css", GET, ANY_ANY, handle_index_css);
+    handlers_ok = server_core_put_handler(&server, "/home", GET, ANY_ANY, handle_root) && server_core_put_handler(&server, "/index.css", GET, ANY_ANY, handle_index_css);
 
     /// 1d. Put exit handler for graceful cleanup.
     atexit(handle_signal_stops);

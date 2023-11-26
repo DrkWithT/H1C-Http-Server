@@ -53,7 +53,11 @@ void bqueue_destroy(BlockedQueue *bqueue)
     while (bqueue->head != NULL)
     {
         next_ptr = next_ptr->next;
+
+        // close still pending connection fd's!
+        close(next_ptr->data);
         free(bqueue->head);
+
         bqueue->head = next_ptr;
     }
     

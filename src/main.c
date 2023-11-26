@@ -1,8 +1,8 @@
 /**
  * @file main.c
  * @author Derek Tan
- * @brief Implements driver code for the "H1C" server. See README for more details.
- * @version 0.2.0
+ * @brief Implements driver code for the "H1C" server. Now this should use a producer-worker thread model.
+ * @version 0.3.0
  * @date 2023-08-29
  * 
  * @copyright Copyright (c) 2023

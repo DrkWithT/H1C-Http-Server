@@ -24,6 +24,7 @@ typedef enum srvworker_state_e
 typedef struct srvworker_t
 {
     ServerWorkerState state;  // controlling FSM status for worker actions 
+    bool must_abort; // special flag to indicate an early stop 
 
     BaseRequest request;
     ResponseObj response;

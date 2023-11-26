@@ -15,6 +15,7 @@
 void srvworker_init(ServerWorker *srvworker, RouteMap *router_ref, HandlerContext *ctx_ref, BlockedQueue *bqueue_ref, const char *server_name)
 {
     srvworker->state = SWORKER_START;
+    srvworker->must_abort = false;
     basic_reqinfo_init(&srvworker->request);
     resinfo_init(&srvworker->response, server_name);
 
@@ -27,12 +28,14 @@ void srvworker_init(ServerWorker *srvworker, RouteMap *router_ref, HandlerContex
 
 void srvworker_dispose(ServerWorker *srvworker)
 {
-    srvworker->router_ref = NULL;
-    srvworker->ctx_ref = NULL;
-    srvworker->bqueue_ref = NULL;
+    clientsocket_close(&srvworker->clisock);
 
     h1scanner_dispose(&srvworker->scanner);
     h1writer_dispose(&srvworker->writer);
+
+    srvworker->router_ref = NULL;
+    srvworker->ctx_ref = NULL;
+    srvworker->bqueue_ref = NULL;
 }
 
 ServerWorkerState srvworker_consume(ServerWorker *srvworker)
@@ -54,6 +57,7 @@ ServerWorkerState srvworker_consume(ServerWorker *srvworker)
     free(popped_task);
 
     pthread_mutex_unlock(&srvworker->bqueue_ref->lock);
+
     return SWORKER_RECV;
 }
 
@@ -194,7 +198,7 @@ void *run_srvworker(void *srvworker_ref)
 {
     ServerWorker *srvworker = (ServerWorker *) srvworker_ref;
 
-    while (srvworker->state != SWORKER_END)
+    while (srvworker->state != SWORKER_END && !srvworker->must_abort)
     {
         if (srvworker->state == SWORKER_START || srvworker->state == SWORKER_CONSUME)
         {
@@ -216,8 +220,13 @@ void *run_srvworker(void *srvworker_ref)
         {
             srvworker->state = srvworker_reset(srvworker);
         }
-        else;
+        else
+        {
+            srvworker->state = SWORKER_END;
+        }
     }
+
+    srvworker_dispose(srvworker);
 
     return NULL;
 }

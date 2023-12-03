@@ -1,7 +1,7 @@
 /**
  * @file sockets.c
  * @author Derek Tan
- * @brief Implements socket wrappers and helper functions. 
+ * @brief Implements synchronous I/O wrappers for TCP sockets. 
  * @date 2023-09-01
  * 
  * @copyright Copyright (c) 2023
@@ -60,6 +60,13 @@ void serversocket_init(ServerSocket *svr_sock, const char *host, const char *por
         svr_sock->closed = true;
     }
 
+    // Set connection timeout of 2.5s to reduce worker stalling.
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 2500;
+
+    setsockopt(svr_sock->fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
     svr_sock->ready = ready_flag;
     svr_sock->closed = false;
 }
@@ -94,7 +101,7 @@ int serversocket_accept(ServerSocket *svr_sock)
 void clientsocket_init(ClientSocket *cli_sock, int fd)
 {
     cli_sock->fd = fd;
-    cli_sock->closed = (fd != -1);
+    cli_sock->closed = (fd == -1);
 }
 
 void clientsocket_close(ClientSocket *cli_sock)

@@ -48,6 +48,8 @@ HttpScannerState h1scanner_method(HttpScanner *scanner, BaseRequest *req_ref)
     
     const char *method_str = scanner->header_buf.data;
 
+    // printf("h1scanner_method: method_str = \"%s\"", method_str); // debug
+
     if (strncmp(method_str, HTTP_METHOD_HEAD, 4) == 0)
         req_ref->method_id = HEAD;
     else if (strncmp(method_str, HTTP_METHOD_GET, 3) == 0)

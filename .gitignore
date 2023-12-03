@@ -1,6 +1,8 @@
 # ignore other dirs, files
+.DS_Store
 bin/
 build/
+.vscode/
 
 # ignore future server config file
 config.txt

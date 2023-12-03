@@ -16,6 +16,7 @@
 
 /** Methods */
 
+#define HTTP_METHOD_ANY "ANY"
 #define HTTP_METHOD_HEAD "HEAD"
 #define HTTP_METHOD_GET "GET"
 #define HTTP_METHOD_POST "POST"
@@ -44,12 +45,14 @@
 #define HTTP_STATUS_OK "200"
 #define HTTP_STATUS_BAD_REQUEST "400"
 #define HTTP_STATUS_UNFOUND "404"
+#define HTTP_STATUS_NO_ACCEPT "406"
 #define HTTP_STATUS_SERVER_ERR "500"
 #define HTTP_STATUS_NO_IMPL "501"
 
 #define HTTP_MSG_OK "OK"
 #define HTTP_MSG_BAD_REQUEST "Bad Request"
 #define HTTP_MSG_UNFOUND "Not Found"
+#define HTTP_MSG_NO_ACCEPT "Not Acceptable"
 #define HTTP_MSG_SERVER_ERR "Internal Server Error"
 #define HTTP_MSG_NO_IMPL "Not Implemented"
 
@@ -57,6 +60,7 @@
 
 typedef enum http_method_e
 {
+    ANYTHING,
     HEAD,
     GET,
     POST,

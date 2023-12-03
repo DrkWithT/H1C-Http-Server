@@ -55,13 +55,9 @@ void basic_reqinfo_clear(BaseRequest *base_req)
         base_req->host_hstr = NULL;
     }
 
-    if (base_req->body_blob != NULL)
-    {
-        free(base_req->body_blob);
-        base_req->body_blob = NULL;
-    }
+    base_req->body_blob = NULL;  // NOTE: Unbind blob managed by StaticResource objects instead.
 
     base_req->keep_connection = false;
-    base_req->mime_type = TXT_PLAIN;
+    base_req->mime_type = ANY_ANY;
     base_req->content_len = 0;
 }

@@ -22,14 +22,30 @@ void resinfo_init(ResponseObj *response, const char *server_name)
     response->body_blob = NULL;
 }
 
-void resinfo_reset(ResponseObj *response)
+void resinfo_reset(ResponseObj *response, ResponseRstMode mode)
 {
-    response->status_line_len = 0;
-    memset(response->status_line, '\0', STATUS_LINE_BUFSIZE);
-    response->keep_connection = false;
-    response->mime_type = MIME_UNKNOWN;
-    response->content_len = 0;
-    response->body_blob = NULL;
+    if (mode == RES_RST_ALL)
+    {
+        response->status_line_len = 0;
+        memset(response->status_line, '\0', STATUS_LINE_BUFSIZE);
+        response->date = time(NULL);
+        response->keep_connection = false;
+        response->mime_type = MIME_UNKNOWN;
+        response->content_len = 0;
+        response->body_blob = NULL;
+        return;
+    }
+    else if (mode == RES_RST_HEADERS)
+    {
+        response->date = time(NULL);
+        response->keep_connection = false;
+        response->mime_type = MIME_UNKNOWN;
+    }
+    else if (mode == RES_RST_PAYLOAD)
+    {
+        response->content_len = 0;
+        response->body_blob = NULL;
+    }
 }
 
 void resinfo_fill_status_line(ResponseObj *response, const char *schema, const char *code, const char *msg)

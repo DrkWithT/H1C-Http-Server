@@ -1,7 +1,7 @@
 # README
 
 ## Brief
-This repo contains files and code for a minimal, toy HTTP/1.x server. Other Linux systems will likely support the C standard library and UNIX networking headers, but Windows will not. Not for production usage but for learning purposes.
+This repo contains files and code for a minimal, toy HTTP/1.x server. *nix systems and Linux distros should support the C standard library and UNIX networking headers, but Windows will not. Not for production usage but for learning purposes.
 
 ## References
  - [HTTP 1.x Introduction](https://jmarshall.com/easy/http/)
@@ -21,5 +21,5 @@ This repo contains files and code for a minimal, toy HTTP/1.x server. Other Linu
     - ~~Implement date utility and resource cache before packing them into a context object.~~
     - ~~Add context argument to callback & fallback function signatures.~~
     - ~~Integrate `RouteMap` into main server logic.~~
-    - Possibly refactor server to use thread pools: `BlockedQueue`, `ServerListener`, `ServerWorker` (WIP)
-    - Refactor H1CServer object to reuse thread pool logic.
+    - ~~Possibly refactor server to use thread pools: `BlockedQueue`, `ServerListener`, `ServerWorker`~~
+    - Fix server to gracefully exit on `SIGINT`. Currently the CTRL+C keystroke does not cleanly exit: the first time only prints the exiting message. Even then there is a double free almost certainly within the called cleanup code per worker. 
